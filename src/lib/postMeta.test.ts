@@ -15,9 +15,11 @@ describe("parsePostMeta", () => {
       date: "2026-10-20",
       spot: "○○港",
       fish: ["シーバス"],
+      tags: [],
       tide: "中潮",
       weather: undefined,
       summary: undefined,
+      cover: undefined,
     });
   });
 
@@ -38,6 +40,17 @@ describe("parsePostMeta", () => {
     expect(() => parsePostMeta("x", { ...valid, fish: "シーバス" })).toThrow("fish は");
   });
 
+  it("reads tags and rejects tags written as a single string", () => {
+    expect(parsePostMeta("x", { ...valid, tags: ["夜釣り", "ルアー"] }).tags).toEqual(["夜釣り", "ルアー"]);
+    expect(() => parsePostMeta("x", { ...valid, tags: "夜釣り" })).toThrow("tags は");
+  });
+
+  it("accepts a cover photo only as a file name in the post's photo folder", () => {
+    expect(parsePostMeta("x", { ...valid, cover: "2.webp" }).cover).toBe("2.webp");
+    expect(() => parsePostMeta("x", { ...valid, cover: "../other/1.webp" })).toThrow("cover は");
+    expect(() => parsePostMeta("x", { ...valid, cover: "1.jpg" })).toThrow("cover は");
+  });
+
   it("asks for the header block when a post has none", () => {
     expect(() => parsePostMeta("x", undefined)).toThrow("先頭に --- で囲んだ項目");
   });
@@ -45,7 +58,7 @@ describe("parsePostMeta", () => {
 
 describe("sortByDateDesc", () => {
   it("puts the newest trip first", () => {
-    const post = (slug: string, date: string): PostMeta => ({ ...valid, slug, date });
+    const post = (slug: string, date: string): PostMeta => ({ ...valid, slug, date, tags: [] });
     const sorted = sortByDateDesc([post("b", "2026-01-01"), post("c", "2026-10-20"), post("a", "2026-01-01")]);
     expect(sorted.map((p) => p.slug)).toEqual(["c", "a", "b"]);
   });

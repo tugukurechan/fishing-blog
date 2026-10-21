@@ -8,18 +8,31 @@ export type PostMeta = {
   spot: string;
   /** 釣れた魚・狙った魚。坊主の日は空でよい */
   fish: string[];
+  /** 自由に付ける目印（例: 夜釣り、ルアー、自己記録）。一覧で絞り込める */
+  tags: string[];
   weather?: string;
   tide?: string;
-  /** 一覧に出す短い説明 */
+  /** 一覧に出す短い説明。書かなければ本文の書き出しを出す */
   summary?: string;
+  /** 一覧に出す写真（例: 2.webp）。書かなければ本文の最初の <Photo> */
+  cover?: string;
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const PHOTO_FILE = /^[a-z0-9-]+\.webp$/;
 
 function optionalText(data: Record<string, unknown>, key: string, where: string): string | undefined {
   const value = data[key];
   if (value === undefined) return undefined;
   if (typeof value !== "string" || !value.trim()) throw new Error(`${where}: ${key} は文字列で書いてください`);
+  return value;
+}
+
+function textList(data: Record<string, unknown>, key: string, where: string, example: string): string[] {
+  const value = data[key] ?? [];
+  if (!Array.isArray(value) || value.some((v) => typeof v !== "string" || !v.trim())) {
+    throw new Error(`${where}: ${key} は ${example} のように書いてください`);
+  }
   return value;
 }
 
@@ -45,9 +58,9 @@ export function parsePostMeta(slug: string, frontmatter: unknown): PostMeta {
     throw new Error(`${where}: date は 2026-10-20 のように書いてください`);
   }
 
-  const fish = data.fish ?? [];
-  if (!Array.isArray(fish) || fish.some((f) => typeof f !== "string" || !f.trim())) {
-    throw new Error(`${where}: fish は [シーバス, アジ] のように書いてください`);
+  const cover = optionalText(data, "cover", where);
+  if (cover !== undefined && !PHOTO_FILE.test(cover)) {
+    throw new Error(`${where}: cover は 1.webp のように、写真フォルダの中のファイル名で書いてください`);
   }
 
   return {
@@ -55,14 +68,16 @@ export function parsePostMeta(slug: string, frontmatter: unknown): PostMeta {
     title: requiredText(data, "title", where),
     date,
     spot: requiredText(data, "spot", where),
-    fish,
+    fish: textList(data, "fish", where, "[シーバス, アジ]"),
+    tags: textList(data, "tags", where, "[夜釣り, ルアー]"),
     weather: optionalText(data, "weather", where),
     tide: optionalText(data, "tide", where),
     summary: optionalText(data, "summary", where),
+    cover,
   };
 }
 
 /** 新しい釣行から順に並べる。同じ日は slug の順 */
-export function sortByDateDesc(posts: PostMeta[]): PostMeta[] {
+export function sortByDateDesc<T extends PostMeta>(posts: T[]): T[] {
   return [...posts].sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
 }
