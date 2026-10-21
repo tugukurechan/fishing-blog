@@ -26,7 +26,7 @@ export default async function PostPage({ params }: PageProps<"/posts/[slug]">) {
         <header className="mb-8">
           <h1 className="text-2xl font-bold leading-snug">{meta.title}</h1>
           <div className="mt-3">
-            <PostInfo post={meta} />
+            <PostInfo post={meta} linked />
           </div>
         </header>
         <div className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-sky-700">
